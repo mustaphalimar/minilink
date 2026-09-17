@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -116,5 +117,53 @@ public class URLShortenerService {
             sb.append(BASE_62_CHARS.charAt(index));
         }
         return sb.toString();
+    }
+
+    public Optional<String> getOriginalURL(String shortCode) {
+        String cachedURL = getCachedURL(shortCode);
+        if (cachedURL != null) {
+            return Optional.of(cachedURL);
+        }
+
+        URLData urlData = urlMappings.get(shortCode);
+        if (urlData != null && urlData.isActive()) {
+            if (isExpired(urlData)) {
+                urlData.setActive(false);
+                return Optional.empty();
+            }
+
+            // caching the short url
+            cacheURL(shortCode, urlData.getOriginalURL());
+            return Optional.of(urlData.getOriginalURL());
+        }
+        return Optional.empty();
+    }
+
+    private boolean isExpired(URLData urlData) {
+        return urlData.getExpiresAt() != null && urlData.getExpiresAt().isBefore(LocalDateTime.now());
+    }
+
+    private String getCachedURL(String shortCode) {
+        try {
+            return (String) redisTemplate.opsForValue().get("url" + shortCode);
+        } catch (Exception e) {
+            log.warn("failed to read cached URL for {}:{}", shortCode, e.getMessage());
+            return null;
+        }
+    }
+
+    public void recordClick(String shortCode, String clientIP, String userAgent, String referrer) {
+        URLData urlData = urlMappings.get(shortCode);
+        if (urlData != null && urlData.isActive()) {
+            urlData.setClickCount(urlData.getClickCount() + 1);
+            ClickEvent clickEvent = ClickEvent.builder()
+                    .timestamp(LocalDateTime.now())
+                    .ipAddress(clientIP)
+                    .userAgent(userAgent)
+                    .referrer(referrer)
+                    .build();
+            clickAnalytics.get(shortCode).add(clickEvent);
+            log.debug("recorded click for short code: {}", shortCode);
+        }
     }
 }
