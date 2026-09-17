@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class ShortenURLRequest {
     @NotBlank(message = "Original URL is required")
     @Pattern(regexp = "^https?://.*", message = "URL must starts with http or https")
-    private String originURL;
+    private String originalURL;
     private String customAlias;
     private LocalDateTime expiresAt;
 

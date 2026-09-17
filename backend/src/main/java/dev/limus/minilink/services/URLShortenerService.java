@@ -4,8 +4,6 @@ import dev.limus.minilink.dtos.ShortenURLRequest;
 import dev.limus.minilink.dtos.ShortenURLResponse;
 import dev.limus.minilink.models.ClickEvent;
 import dev.limus.minilink.models.URLData;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,7 +55,7 @@ public class URLShortenerService {
             }
         }
         URLData urlData = URLData.builder()
-                .originalURL(request.getOriginURL())
+                .originalURL(request.getOriginalURL())
                 .shortCode(shortCode)
                 .expiresAt(request.getExpiresAt())
                 .createdAt(LocalDateTime.now())
@@ -71,13 +69,13 @@ public class URLShortenerService {
         clickAnalytics.put(shortCode, new ArrayList<>());
 
         // caching the shortcode for quick access next time
-        cacheURL(shortCode, request.getOriginURL());
+        cacheURL(shortCode, request.getOriginalURL());
 
-        log.info("Created short URL: {} -> {}", shortCode, request.getOriginURL());
+        log.info("Created short URL: {} -> {}", shortCode, request.getOriginalURL());
         return ShortenURLResponse.builder()
                 .shortURL(buildShortURL(shortCode))
                 .shortCode(shortCode)
-                .originalURL(request.getOriginURL())
+                .originalURL(request.getOriginalURL())
                 .createdAt(urlData.getCreatedAt())
                 .expiresAt(urlData.getExpiresAt())
                 .build();

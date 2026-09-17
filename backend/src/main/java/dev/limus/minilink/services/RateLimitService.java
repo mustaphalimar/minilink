@@ -110,4 +110,44 @@ public class RateLimitService {
             return null;
         }
     }
+
+    public int getRemainingRequests(String clientIP) {
+        String redisKey = REDIS_KEY_PREFIX + clientIP;
+        RateLimitData data = getRateLimitDataFromRedis(redisKey);
+
+        if (data == null) {
+            return allowedRequestsPerMinute;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!isWithinMinuteWindow(data, now)) {
+            return allowedRequestsPerMinute;
+        }
+
+        return Math.max(0, allowedRequestsPerMinute - data.getMinuteCount());
+    }
+
+    public long getTimeUntilReset(String clientIP) {
+        String redisKey = REDIS_KEY_PREFIX + clientIP;
+        RateLimitData data = getRateLimitDataFromRedis(redisKey);
+
+        if (data == null) {
+            return 0;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (data.getMinuteCount() >= allowedRequestsPerMinute) {
+            LocalDateTime nextMinute = data.getMinuteWindowStart()
+                    .plusMinutes(1);
+            return ChronoUnit.SECONDS.between(now, nextMinute);
+        }
+
+        if (data.getHourCount() >= allowedRequestsPerHour) {
+            LocalDateTime nextHour = data.getHourWindowStart()
+                    .plusMinutes(1);
+            return ChronoUnit.SECONDS.between(now, nextHour);
+        }
+
+        return 0;
+    }
 }
