@@ -26,6 +26,13 @@ public class URLShortenerController {
     private final URLShortenerService urlShortenerService;
     private final RateLimitService rateLimitService;
 
+    @GetMapping("/health")
+    public ResponseEntity<?> healthCheck(){
+        return ResponseEntity.ok().body(Map.of(
+                "status", "ok"
+        ));
+    }
+
 
     @PostMapping("/shorten")
     public ResponseEntity<?> shortenUrl(
