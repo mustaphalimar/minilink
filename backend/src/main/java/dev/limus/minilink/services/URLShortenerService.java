@@ -233,6 +233,7 @@ public class URLShortenerService {
             log.info("Deleted URL: {}", shortCode);
             return true;
         }
+        return false;
     }
 
     private void deleteCacheURL(String shortCode) {
@@ -240,6 +241,24 @@ public class URLShortenerService {
             redisTemplate.delete("url:" + shortCode);
         } catch (Exception e) {
             log.warn("failed to delete cached URL for {}:{}", shortCode, e.getMessage());
+        }
+    }
+
+    public void cleanupExpiredURLs() {
+        int cleanedCount = 0;
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Map.Entry<String, URLData> entry : urlMappings.entrySet()) {
+            URLData urlData = entry.getValue();
+            if (urlData.getExpiresAt() != null && urlData.isActive() && urlData.getExpiresAt().isBefore(now)) {
+                urlData.setActive(false);
+                deleteCacheURL(entry.getKey());
+                cleanedCount++;
+            }
+        }
+
+        if (cleanedCount > 0) {
+            log.info("cleaned up {} expired URLs", cleanedCount);
         }
     }
 }

@@ -2,12 +2,14 @@ package dev.limus.minilink;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 public class MinilinkApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MinilinkApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(MinilinkApplication.class, args);
+    }
 
 }
