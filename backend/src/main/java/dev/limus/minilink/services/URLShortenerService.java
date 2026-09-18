@@ -146,7 +146,7 @@ public class URLShortenerService {
 
     private String getCachedURL(String shortCode) {
         try {
-            return (String) redisTemplate.opsForValue().get("url" + shortCode);
+            return (String) redisTemplate.opsForValue().get("url:" + shortCode);
         } catch (Exception e) {
             log.warn("failed to read cached URL for {}:{}", shortCode, e.getMessage());
             return null;

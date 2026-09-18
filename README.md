@@ -8,7 +8,7 @@ A URL shortener built with Spring Boot, Angular and Redis. Create short links wi
 - Optional expiry date, with a scheduled job that purges expired links
 - Click tracking: total count, recent events, breakdown by referrer, hour and day
 - Per-IP rate limiting on link creation (per-minute and per-hour windows)
-- Redis as the single datastore, with cached lookups for redirects
+- Redis-backed redirect cache and rate limit counters
 
 ## Stack
 
@@ -16,13 +16,25 @@ A URL shortener built with Spring Boot, Angular and Redis. Create short links wi
 |----------|----------------------------------------|
 | Backend  | Java 21, Spring Boot 4, Spring Data Redis |
 | Frontend | Angular 22, served by nginx            |
-| Storage  | Redis 7                                |
+| Cache    | Redis 7                                |
 | Runtime  | Docker Compose                         |
 
-## Run it
+## Run with Docker Compose
+
+Requires Docker Desktop (or Docker Engine with the Compose plugin). No local Java or Node needed.
 
 ```bash
-docker compose up --build
+git clone <this-repo> && cd minilink
+docker compose up --build          # build images and start redis, backend, frontend
+```
+
+Add `-d` to run in the background. Useful commands:
+
+```bash
+docker compose logs -f backend     # follow backend logs
+docker compose ps                  # service status and health
+docker compose down                # stop and remove containers
+docker compose down -v             # also wipe Redis data
 ```
 
 | Service  | URL                     |
@@ -30,6 +42,8 @@ docker compose up --build
 | Frontend | http://localhost:8082   |
 | Backend  | http://localhost:8080   |
 | Redis    | localhost:6379          |
+
+The frontend's nginx proxies `/api/*` to the backend, so the browser only talks to port 8082. The backend waits for Redis to pass its healthcheck before starting.
 
 ## API
 
@@ -61,6 +75,16 @@ curl -X POST http://localhost:8080/api/shorten \
   "expiresAt": "2026-12-31T23:59:00"
 }
 ```
+
+## How it works
+
+**Storage.** Link records and click events are kept in in-memory concurrent maps inside the backend. This keeps the project simple but means data does not survive a restart. Redis is used for the two things below.
+
+**Caching.** On redirect, the service first checks a plain string key `url:<code>` that maps straight to the destination. A hit skips the record lookup and expiry check. The cache entry is written on link creation and on the first miss, expires after `cache.ttl-minutes` (default 30), and is evicted when the link is deleted or cleaned up.
+
+**Rate limiting.** Link creation is limited per client IP using a fixed-window counter stored in Redis under `ratelimit:<ip>`. Two windows are checked, per-minute and per-hour, and the counter key expires after an hour. Exceeding either returns `429 Too Many Requests`. Defaults are deliberately low (2/min, 10/hour) for demo purposes.
+
+**Cleanup.** A scheduled job runs every `cleanup.interval-minutes` and removes links whose `expiresAt` has passed, along with their cache entries.
 
 ## Configuration
 
