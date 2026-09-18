@@ -1,94 +1,241 @@
-<main class="page">
-  <section class="card hero">
-    <p class="eyebrow">minilink</p>
-    <h1>URL shortening with expiry, analytics and Redis backed caching</h1>
-    <p class="lead">
-      Create short URLs, open redirects, and inspect click analytics from one screen
+<main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
+  <!-- Hero -->
+  <header class="mb-10 text-center sm:mb-14">
+    <h1 class="text-balance text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+      Short links with expiry, analytics and Redis caching
+    </h1>
+    <p class="mx-auto mt-4 max-w-2xl text-pretty text-base text-slate-600 sm:text-lg">
+      Create short URLs, share them, and inspect click stats from one screen. Built with Spring
+      Boot, Angular and Redis.
     </p>
-    <div class="explain">
-      <p>
-        <strong>Ratelimit requests:</strong> counts how many API requests one client/IP makes
-        withing a short time window
-      </p>
-      <p>
-        <strong>URL clicks:</strong> counts how many times a short link is opened and redirected
-      </p>
-    </div>
-  </section>
-  <section class="grid">
-    <article class="card">
-      <h2>Create short URL</h2>
-      <form [formGroup]="form" (ngSubmit)="shortenURL()">
-        <label>
-          Original URL
+    <dl class="mx-auto mt-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
+      <div class="rounded-xl border border-slate-200/80 bg-white/70 p-4">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Cached redirects</dt>
+        <dd class="mt-1 text-sm text-slate-700">Resolved destinations are cached in Redis with a TTL.</dd>
+      </div>
+      <div class="rounded-xl border border-slate-200/80 bg-white/70 p-4">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Rate limited</dt>
+        <dd class="mt-1 text-sm text-slate-700">Link creation is limited per IP, per minute and per hour.</dd>
+      </div>
+      <div class="rounded-xl border border-slate-200/80 bg-white/70 p-4">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Auto cleanup</dt>
+        <dd class="mt-1 text-sm text-slate-700">Expired links are purged by a scheduled job.</dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="grid gap-6 lg:grid-cols-5">
+    <!-- Create -->
+    <section class="card lg:col-span-3">
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-slate-900">Create a short URL</h2>
+        <p class="mt-1 text-sm text-slate-500">Only the original URL is required.</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="shortenURL()" class="space-y-5" novalidate>
+        <div>
+          <label for="originalURL" class="field-label">Original URL</label>
           <input
+            id="originalURL"
+            class="field-input"
             formControlName="originalURL"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
             placeholder="https://example.com/very/long/url?toShorten=true"
           />
-        </label>
-        <label>
-          Custom Alias
-          <input formControlName="customAlias" placeholder="optional-code" />
-        </label>
-        <label>
-          Expires At
-          <input formControlName="expiresAt" type="datetime-local" />
-        </label>
+          @if (showError(form.controls.originalURL)) {
+            <p class="field-error">Enter a full URL starting with http:// or https://</p>
+          }
+        </div>
 
-        <button type="submit" [disabled]="loading() || form.invalid">
-          {{ loading() ? 'Creating' : 'Shorten URL' }}
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label for="customAlias" class="field-label">
+              Custom alias
+              <span class="font-normal text-slate-400">(optional)</span>
+            </label>
+            <input
+              id="customAlias"
+              class="field-input"
+              formControlName="customAlias"
+              autocomplete="off"
+              placeholder="my-link"
+            />
+            <p class="field-hint">Leave empty to generate a random code.</p>
+          </div>
+          <div>
+            <label for="expiresAt" class="field-label">
+              Expires at
+              <span class="font-normal text-slate-400">(optional)</span>
+            </label>
+            <input id="expiresAt" class="field-input" formControlName="expiresAt" type="datetime-local" />
+            <p class="field-hint">The link stops redirecting after this time.</p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          @if (loading()) {
+            <span class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+            Creating…
+          } @else {
+            Shorten URL
+          }
         </button>
       </form>
+
       @if (error()) {
-        <p class="error">{{ error() }}</p>
+        <div class="alert-error" role="alert">
+          <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+          </svg>
+          <span>{{ error() }}</span>
+        </div>
       }
 
       @if (result(); as result) {
-        <div class="result">
-          <p>
-            <strong>Short URL: </strong>
-            <a [href]="result.shortURL" target="_blank" rel="noreferrer">
-              {{ result.shortURL }}
-            </a>
-          </p>
-          <p>
-            <strong>Short code: </strong>
-            {{ result.shortCode }}
-          </p>
-          <p>
-            <strong>Created: </strong>
-            {{ result.createdAt | date: 'medium' }}
-          </p>
+        <div class="result-panel">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <p class="text-sm font-semibold text-slate-900">Your short link is ready</p>
+            <button type="button" class="btn-ghost" (click)="copy(result.shortURL)">
+              @if (copied()) {
+                <svg class="size-3.5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd" />
+                </svg>
+                Copied
+              } @else {
+                <svg class="size-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5h-1v-3.379a3 3 0 0 0-.879-2.121L10.5 5.379A3 3 0 0 0 8.379 4.5H7v-1Z" />
+                  <path d="M4.5 6A1.5 1.5 0 0 0 3 7.5v9A1.5 1.5 0 0 0 4.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L9.44 6.44A1.5 1.5 0 0 0 8.378 6H4.5Z" />
+                </svg>
+                Copy
+              }
+            </button>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Short URL</span>
+            <span class="result-value">
+              <a
+                [href]="result.shortURL"
+                target="_blank"
+                rel="noreferrer"
+                class="font-medium text-brand-600 hover:underline"
+              >
+                {{ result.shortURL }}
+              </a>
+            </span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Short code</span>
+            <span class="result-value font-mono">{{ result.shortCode }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Original</span>
+            <span class="result-value text-slate-600">{{ result.originalURL }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Created</span>
+            <span class="result-value">{{ result.createdAt | date: 'medium' }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Expires</span>
+            <span class="result-value">
+              {{ result.expiresAt ? (result.expiresAt | date: 'medium') : 'Never' }}
+            </span>
+          </div>
         </div>
       }
-    </article>
-    <article class="card">
-      <h2>Get URL stats</h2>
-      <form [formGroup]="statsForm" (ngSubmit)="loadsStats()">
-        <label>
-          Short code
-          <input formControlName="shortCode" placeholder="abc123" />
-        </label>
+    </section>
 
-        <button type="submit" [disabled]="statsLoading() || statsForm.invalid">
-          {{ statsLoading() ? 'Loading' : 'Get stats' }}
+    <!-- Stats -->
+    <section class="card lg:col-span-2">
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-slate-900">Look up stats</h2>
+        <p class="mt-1 text-sm text-slate-500">Paste a short code to see how it is doing.</p>
+      </div>
+
+      <form [formGroup]="statsForm" (ngSubmit)="loadsStats()" class="space-y-5" novalidate>
+        <div>
+          <label for="shortCode" class="field-label">Short code</label>
+          <input
+            id="shortCode"
+            class="field-input font-mono"
+            formControlName="shortCode"
+            autocomplete="off"
+            placeholder="abc123"
+          />
+          @if (showError(statsForm.controls.shortCode)) {
+            <p class="field-error">Short code is required</p>
+          }
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="statsLoading()">
+          @if (statsLoading()) {
+            <span class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+            Loading…
+          } @else {
+            Get stats
+          }
         </button>
       </form>
 
       @if (statsError()) {
-        <p class="error">{{ statsError() }}</p>
+        <div class="alert-error" role="alert">
+          <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+          </svg>
+          <span>{{ statsError() }}</span>
+        </div>
       }
 
       @if (stats(); as stats) {
-          <div class="result">
-            <p><strong>Original URL:</strong>{{stats.originalURL}}</p>
-            <p><strong>Clicks:</strong>{{stats.clickCount}}</p>
-            <p><strong>Active:</strong>{{stats.active ? "Yes": "No"}}</p>
-            <p><strong>Created by:</strong>{{stats.createdBy}}</p>
-
-
+        <div class="result-panel">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p class="text-3xl font-bold tabular-nums text-slate-900">{{ stats.clickCount }}</p>
+              <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {{ stats.clickCount === 1 ? 'click' : 'clicks' }}
+              </p>
+            </div>
+            @if (stats.active) {
+              <span class="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                <span class="size-1.5 rounded-full bg-emerald-500"></span>
+                Active
+              </span>
+            } @else {
+              <span class="badge bg-slate-100 text-slate-600 ring-1 ring-slate-200">
+                <span class="size-1.5 rounded-full bg-slate-400"></span>
+                Inactive
+              </span>
+            }
           </div>
+          <div class="result-row">
+            <span class="result-key">Code</span>
+            <span class="result-value font-mono">{{ stats.shortCode }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Original</span>
+            <span class="result-value text-slate-600">{{ stats.originalURL }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Created</span>
+            <span class="result-value">{{ stats.createdAt | date: 'medium' }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Expires</span>
+            <span class="result-value">
+              {{ stats.expiresAt ? (stats.expiresAt | date: 'medium') : 'Never' }}
+            </span>
+          </div>
+          @if (stats.createdBy) {
+            <div class="result-row">
+              <span class="result-key">Created by</span>
+              <span class="result-value">{{ stats.createdBy }}</span>
+            </div>
+          }
+        </div>
       }
-    </article>
-  </section>
+    </section>
+  </div>
+  
 </main>

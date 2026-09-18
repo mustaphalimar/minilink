@@ -1,8 +1,7 @@
-import { Component, inject, signal} from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ShortenResponse, URLStats } from './types';
 
 @Component({
@@ -31,6 +30,20 @@ export class App {
   protected readonly statsError = signal('');
   protected readonly result = signal<ShortenResponse | null>(null);
   protected readonly stats = signal<URLStats | null>(null);
+  protected readonly copied = signal(false);
+  private copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  protected showError(control: AbstractControl): boolean {
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  protected copy(text: string): void {
+    navigator.clipboard?.writeText(text).then(() => {
+      this.copied.set(true);
+      clearTimeout(this.copiedTimer);
+      this.copiedTimer = setTimeout(() => this.copied.set(false), 2000);
+    });
+  }
 
   protected shortenURL(): void {
     if (this.form.invalid) {
@@ -46,6 +59,7 @@ export class App {
     this.loading.set(true);
     this.error.set('');
     this.result.set(null);
+    this.copied.set(false);
 
     this.http.post<ShortenResponse>("api/shorten", payload).subscribe(
       {
@@ -81,7 +95,7 @@ export class App {
         this.statsLoading.set(false);
       },
       error: (error) => {
-        this.error.set(error?.error?.error ?? 'Failed to fetch stats');
+        this.statsError.set(error?.error?.error ?? 'Failed to fetch stats');
         this.statsLoading.set(false);
       },
     });

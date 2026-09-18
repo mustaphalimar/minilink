@@ -1,125 +1,68 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
 
-
-:root {
-  color-scheme: light;
-  font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(135deg, #f6f8fb 0%, #eef2ff 100%);
-  color: #172033;
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  body {
+    @apply min-h-screen bg-slate-50 text-slate-800 antialiased;
+    background-image:
+      radial-gradient(60rem 30rem at 50% -10rem, rgb(99 102 241 / 0.12), transparent 60%);
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-}
-
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 48px 20px 64px;
-}
-
-.hero {
-  margin-bottom: 24px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.75rem;
-  color: #516079;
-}
-
-h1,
-h2 {
-  margin-top: 0;
-}
-
-.lead {
-  margin: 0;
-  color: #4a5871;
-  max-width: 60ch;
-}
-
-.explain {
-  margin-top: 16px;
-  display: grid;
-  gap: 10px;
-  color: #33415c;
-}
-
-.grid {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-
-.card {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(113, 127, 159, 0.18);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 18px 45px rgba(23, 32, 51, 0.08);
-  backdrop-filter: blur(10px);
-}
-
-form {
-  display: grid;
-  gap: 14px;
-}
-
-label {
-  display: grid;
-  gap: 6px;
-  color: #33415c;
-  font-weight: 600;
-}
-
-input {
-  width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font: inherit;
-}
-
-button {
-  border: 0;
-  border-radius: 999px;
-  padding: 12px 18px;
-  font: inherit;
-  font-weight: 700;
-  color: white;
-  background: linear-gradient(135deg, #0f766e, #2563eb);
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.error {
-  color: #b91c1c;
-  margin-bottom: 0;
-}
-
-.result {
-  margin-top: 16px;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 16px;
-  word-break: break-word;
-}
-
-.hint {
-  margin-bottom: 0;
-  color: #516079;
-  font-size: 0.95rem;
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-sm backdrop-blur sm:p-8;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+  .field-input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs
+      placeholder:text-slate-400 transition
+      focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15;
+  }
+  .field-input.ng-invalid.ng-touched {
+    @apply border-red-400 focus:border-red-500 focus:ring-red-500/15;
+  }
+  .field-hint {
+    @apply mt-1.5 text-xs text-slate-500;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs text-red-600;
+  }
+  .btn-primary {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition
+      hover:bg-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/30
+      disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand-600;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition
+      hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20;
+  }
+  .alert-error {
+    @apply mt-4 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-700;
+  }
+  .result-panel {
+    @apply mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4;
+  }
+  .result-row {
+    @apply flex flex-col gap-0.5 py-2.5 not-last:border-b not-last:border-slate-200/80 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4;
+  }
+  .result-key {
+    @apply shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500;
+  }
+  .result-value {
+    @apply min-w-0 text-sm text-slate-900 sm:text-right break-all;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
 }
