@@ -2,6 +2,7 @@ package dev.limus.minilink.services;
 
 import dev.limus.minilink.dtos.ShortenURLRequest;
 import dev.limus.minilink.dtos.ShortenURLResponse;
+import dev.limus.minilink.dtos.URLAnalyticsResponse;
 import dev.limus.minilink.dtos.URLStatsResponse;
 import dev.limus.minilink.models.ClickEvent;
 import dev.limus.minilink.models.URLData;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -183,4 +185,44 @@ public class URLShortenerService {
                         .build()
         );
     }
+
+    public Optional<URLAnalyticsResponse> getURLAnalytics(String shortCode) {
+        URLData urlData = urlMappings.get(shortCode);
+        if (urlData == null) {
+            return Optional.empty();
+        }
+
+        List<ClickEvent> clicks = clickAnalytics.getOrDefault(shortCode, new ArrayList<>());
+        Map<String, Integer> clicksByReferrer = clicks.stream()
+                .filter(c -> c.getReferrer() != null)
+                .collect(Collectors.groupingBy(ClickEvent::getReferrer, Collectors.summingInt(e -> 1)));
+
+        Map<String, Integer> clicksByHour = clicks.stream()
+                .collect(Collectors.groupingBy(
+                        c -> c.getTimestamp().getHour() + ":00", Collectors.summingInt(e -> 1))
+                );
+
+        Map<String, Integer> clicksByDay = clicks.stream()
+                .collect(Collectors.groupingBy(
+                        c -> c.getTimestamp().toLocalDate().toString(), Collectors.summingInt(e -> 1))
+                );
+        List<ClickEvent> recentClicks = clicks.stream()
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+                .limit(10)
+                .toList();
+        return Optional.of(
+                URLAnalyticsResponse.builder()
+                        .shortCode(shortCode)
+                        .originalURL(urlData.getOriginalURL())
+                        .totalClicks(urlData.getClickCount())
+                        .createdAt(urlData.getCreatedAt())
+                        .expiresAt(urlData.getExpiresAt())
+                        .recentClicks(recentClicks)
+                        .clicksByReferrer(clicksByReferrer)
+                        .clicksByHour(clicksByHour)
+                        .clicksByDay(clicksByDay)
+                        .build()
+        );
+    }
+ 
 }
