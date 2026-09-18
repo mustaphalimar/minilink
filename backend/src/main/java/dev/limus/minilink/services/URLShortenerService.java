@@ -2,6 +2,7 @@ package dev.limus.minilink.services;
 
 import dev.limus.minilink.dtos.ShortenURLRequest;
 import dev.limus.minilink.dtos.ShortenURLResponse;
+import dev.limus.minilink.dtos.URLStatsResponse;
 import dev.limus.minilink.models.ClickEvent;
 import dev.limus.minilink.models.URLData;
 import lombok.RequiredArgsConstructor;
@@ -163,5 +164,23 @@ public class URLShortenerService {
             clickAnalytics.get(shortCode).add(clickEvent);
             log.debug("recorded click for short code: {}", shortCode);
         }
+    }
+
+    public Optional<URLStatsResponse> getURLStats(String shortCode) {
+        URLData urlData = urlMappings.get(shortCode);
+        if (urlData == null) {
+            return Optional.empty();
+        }
+        return Optional.of(
+                URLStatsResponse.builder()
+                        .shortCode(urlData.getShortCode())
+                        .originalURL(urlData.getOriginalURL())
+                        .clickCount(urlData.getClickCount())
+                        .createdAt(urlData.getCreatedAt())
+                        .expiresAt(urlData.getExpiresAt())
+                        .isActive(urlData.isActive())
+                        .createdBy(urlData.getCreatedBy())
+                        .build()
+        );
     }
 }

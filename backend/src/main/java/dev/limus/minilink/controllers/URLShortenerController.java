@@ -2,6 +2,7 @@ package dev.limus.minilink.controllers;
 
 import dev.limus.minilink.dtos.ShortenURLRequest;
 import dev.limus.minilink.dtos.ShortenURLResponse;
+import dev.limus.minilink.dtos.URLStatsResponse;
 import dev.limus.minilink.services.RateLimitService;
 import dev.limus.minilink.services.URLShortenerService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -71,6 +72,19 @@ public class URLShortenerController {
             return ResponseEntity.status(HttpStatus.FOUND).build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/stats/{shortCode}")
+    public ResponseEntity<?> getURLStats(
+            @PathVariable String shortCode
+    ) {
+        Optional<URLStatsResponse> stats = urlShortenerService.getURLStats(shortCode);
+        if (stats.isPresent()) {
+            return ResponseEntity.ok(stats.get());
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                Map.of("error", "short code not found")
+        );
     }
 
     // getClientIP gets the client IP
