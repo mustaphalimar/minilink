@@ -224,5 +224,22 @@ public class URLShortenerService {
                         .build()
         );
     }
- 
+
+    public boolean deleteURL(String shortCode) {
+        URLData urlData = urlMappings.get(shortCode);
+        if (urlData != null) {
+            urlData.setActive(false);
+            deleteCacheURL(shortCode);
+            log.info("Deleted URL: {}", shortCode);
+            return true;
+        }
+    }
+
+    private void deleteCacheURL(String shortCode) {
+        try {
+            redisTemplate.delete("url:" + shortCode);
+        } catch (Exception e) {
+            log.warn("failed to delete cached URL for {}:{}", shortCode, e.getMessage());
+        }
+    }
 }
