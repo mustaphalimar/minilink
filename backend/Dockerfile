@@ -1,17 +1,17 @@
-FROM maven:3.9.9-eclipse-temurin-17-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-RUN mvn clean package -skipTests
+RUN mvn clean package -DskipTests
 
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN groupadd --system spring && useradd --system --gid spring spring
 
 COPY --from=builder /app/target/*.jar app.jar
 
